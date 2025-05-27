@@ -46,7 +46,7 @@ def normalize_data(data,method='minmax'):
     else: 
         raise ValueError("Invalid method. Choose between \"minmax\" or \"standard\".")
 
-    numeric_col =  data[feature_cols].select_dtypes(include=np.number).columns
+    numeric_col =  data.select_dtypes(include=np.number).columns
     data[numeric_col] = scaler.fit_transform(data[numeric_col])
 
     return data
