@@ -34,53 +34,22 @@ def remove_duplicates(data):
     return data
 
 # 3. Normalize Numerical Data
-def normalize_data(data, method='minmax', target_column=None):
-    """
-    Apply normalization to numerical features, excluding the target column.
-    
+def normalize_data(data,method='minmax'):
+    """Apply normalization to numerical features.
     :param data: pandas DataFrame
-    :param method: str, normalization method ('minmax' or 'standard')
-    :param target_column: str or None, column to exclude from normalization
-    :return: pandas DataFrame with normalized numerical features
+    :param method: str, normalization method ('minmax' (default) or 'standard')
     """
-    print("normalize_data() called with target_column =", target_column)  # <-- add this line temporarily
-    
     if method == "standard":
         scaler = StandardScaler()
     elif method == "minmax":
         scaler = MinMaxScaler()
-    else:
-        raise ValueError("Invalid method. Choose between 'minmax' or 'standard'.")
+    else: 
+        raise ValueError("Invalid method. Choose between \"minmax\" or \"standard\".")
 
-    # Get all numeric columns
-    numeric_cols = data.select_dtypes(include=np.number).columns.tolist()
-
-    # Exclude target column if provided
-    if target_column and target_column in numeric_cols:
-        numeric_cols.remove(target_column)
-
-    # Apply scaler
-    data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
+    numeric_col =  data[feature_cols].select_dtypes(include=np.number).columns
+    data[numeric_col] = scaler.fit_transform(data[numeric_col])
 
     return data
-
-# def normalize_data(data,method='minmax'):
-#     """Apply normalization to numerical features.
-#     :param data: pandas DataFrame
-#     :param method: str, normalization method ('minmax' (default) or 'standard')
-#     """
-#     if method == "standard":
-#         scaler = StandardScaler()
-#     elif method == "minmax":
-#         scaler = MinMaxScaler()
-#     else: 
-#         raise ValueError("Invalid method. Choose between \"minmax\" or \"standard\".")
-    
-#     feature_cols = data.columns[3:]
-#     numeric_col =  data[feature_cols].select_dtypes(include=np.number).columns
-#     data[numeric_col] = scaler.fit_transform(data[numeric_col])
-
-#     return data
 
 # 4. Remove Redundant Features   
 def remove_redundant_features(data, threshold=0.9):
