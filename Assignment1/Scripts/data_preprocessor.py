@@ -1,7 +1,7 @@
 # import all necessary libraries here
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler      # Normalization methods
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
@@ -14,8 +14,14 @@ def impute_missing_values(data, strategy='mean'):
     :param strategy: str, imputation method ('mean', 'median', 'mode')
     :return: pandas DataFrame
     """
-    # TODO: Fill missing values based on the specified strategy
-    pass
+    for col in data.select_dtypes(include=np.number).columns:       # .columns only extracts the column name, so we need to 
+        if strategy == 'mean':                                      # subsequently call data[col] to modify that entire column.
+            data[col].fillna(data[col].mean(), inplace=True)
+        elif strategy == 'median':
+            data[col].fillna(data[col].median(), inplace=True)
+        elif strategy == 'mode':
+            data[col].fillna(data[col].mode()[0], inplace=True)
+    return data
 
 # 2. Remove Duplicates
 def remove_duplicates(data):
@@ -24,17 +30,57 @@ def remove_duplicates(data):
     :param data: pandas DataFrame
     :return: pandas DataFrame
     """
-    # TODO: Remove duplicate rows
-    pass
+    data.drop_duplicates(inplace = True)    
+    return data
 
 # 3. Normalize Numerical Data
-def normalize_data(data,method='minmax'):
-    """Apply normalization to numerical features.
-    :param data: pandas DataFrame
-    :param method: str, normalization method ('minmax' (default) or 'standard')
+def normalize_data(data, method='minmax', target_column=None):
     """
-    # TODO: Normalize numerical data using Min-Max or Standard scaling
-    pass
+    Apply normalization to numerical features, excluding the target column.
+    
+    :param data: pandas DataFrame
+    :param method: str, normalization method ('minmax' or 'standard')
+    :param target_column: str or None, column to exclude from normalization
+    :return: pandas DataFrame with normalized numerical features
+    """
+    print("normalize_data() called with target_column =", target_column)  # <-- add this line temporarily
+    
+    if method == "standard":
+        scaler = StandardScaler()
+    elif method == "minmax":
+        scaler = MinMaxScaler()
+    else:
+        raise ValueError("Invalid method. Choose between 'minmax' or 'standard'.")
+
+    # Get all numeric columns
+    numeric_cols = data.select_dtypes(include=np.number).columns.tolist()
+
+    # Exclude target column if provided
+    if target_column and target_column in numeric_cols:
+        numeric_cols.remove(target_column)
+
+    # Apply scaler
+    data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
+
+    return data
+
+# def normalize_data(data,method='minmax'):
+#     """Apply normalization to numerical features.
+#     :param data: pandas DataFrame
+#     :param method: str, normalization method ('minmax' (default) or 'standard')
+#     """
+#     if method == "standard":
+#         scaler = StandardScaler()
+#     elif method == "minmax":
+#         scaler = MinMaxScaler()
+#     else: 
+#         raise ValueError("Invalid method. Choose between \"minmax\" or \"standard\".")
+    
+#     feature_cols = data.columns[3:]
+#     numeric_col =  data[feature_cols].select_dtypes(include=np.number).columns
+#     data[numeric_col] = scaler.fit_transform(data[numeric_col])
+
+#     return data
 
 # 4. Remove Redundant Features   
 def remove_redundant_features(data, threshold=0.9):
@@ -43,9 +89,11 @@ def remove_redundant_features(data, threshold=0.9):
     :param threshold: float, correlation threshold
     :return: pandas DataFrame
     """
-    # TODO: Remove redundant features based on the correlation threshold (HINT: you can use the corr() method)
-    pass
-
+    corr_matrix = data.select_dtypes(include=np.number).corr().abs()
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+    to_drop = [col for col in upper.columns if any(upper[col] > threshold)]
+    data = data.drop(columns=to_drop)
+    return data
 # ---------------------------------------------------
 
 def simple_model(input_data, split_data=True, scale_data=False, print_report=False):
