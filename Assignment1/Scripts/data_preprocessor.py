@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
 
+
 # 1. Impute Missing Values
 def impute_missing_values(data, strategy='mean'):
     """
@@ -14,6 +15,10 @@ def impute_missing_values(data, strategy='mean'):
     :param strategy: str, imputation method ('mean', 'median', 'mode')
     :return: pandas DataFrame
     """
+    copy_data = data
+    missing_data = copy_data.isnull().mean()
+    to_drop = missing_data[missing_data > 0.5].index.to_list()
+
     for col in data.select_dtypes(include=np.number).columns:       # .columns only extracts the column name, so we need to 
         if strategy == 'mean':                                      # subsequently call data[col] to modify that entire column.
             data[col].fillna(data[col].mean(), inplace=True)
