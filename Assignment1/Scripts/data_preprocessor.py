@@ -43,11 +43,12 @@ def normalize_data(data,method='minmax'):
         scaler = StandardScaler()
     elif method == "minmax":
         scaler = MinMaxScaler()
-    else: 
-        raise ValueError("Invalid method. Choose between \"minmax\" or \"standard\".")
 
     numeric_col =  data.select_dtypes(include=np.number).columns
     data[numeric_col] = scaler.fit_transform(data[numeric_col])
+
+    # Convert first column back to categorical (0 or 1)
+    data['target'] = (data['target'] > 0.5).astype(int)             
 
     return data
 
@@ -58,10 +59,22 @@ def remove_redundant_features(data, threshold=0.9):
     :param threshold: float, correlation threshold
     :return: pandas DataFrame
     """
+    # On numerical columns, calculate the correlation (Pearson method) using .corr()
+    # .abs() get absolute value. 
     corr_matrix = data.select_dtypes(include=np.number).corr().abs()
+
+    # np.ones() Create a new matrix with the same dimension as the original correlation matrix and fill the values with 1s.
+    # np.triu() Get upper triangle of the matrix, indicated by 1s and 0s.
+    # .astype(bool) Convert 0 -> F and 1 -> T.
+    # corr_matrix.where() To apply selection to original correlation matrix.
     upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
+
+    # Identify any columns within the upper correlation matrix that has a high correlation value with another column/
     to_drop = [col for col in upper.columns if any(upper[col] > threshold)]
+
+    # Drop those chosen columns
     data = data.drop(columns=to_drop)
+
     return data
 # ---------------------------------------------------
 
