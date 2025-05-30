@@ -5,6 +5,9 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler      # Normalizat
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score
+import scipy.stats as stats
+
+# 0. Removing columns with many missing values
 
 
 # 1. Impute Missing Values
@@ -15,18 +18,24 @@ def impute_missing_values(data, strategy='mean'):
     :param strategy: str, imputation method ('mean', 'median', 'mode')
     :return: pandas DataFrame
     """
-    copy_data = data
-    missing_data = copy_data.isnull().mean()
-    to_drop = missing_data[missing_data > 0.5].index.to_list()
 
-    for col in data.select_dtypes(include=np.number).columns:       # .columns only extracts the column name, so we need to 
-        if strategy == 'mean':                                      # subsequently call data[col] to modify that entire column.
-            data[col].fillna(data[col].mean(), inplace=True)
-        elif strategy == 'median':
-            data[col].fillna(data[col].median(), inplace=True)
-        elif strategy == 'mode':
-            data[col].fillna(data[col].mode()[0], inplace=True)
+    # Subset feature column
+    features = data.copy().iloc[:,1:]
+
+    # Loop through the features column names that contains numeric values, and fill in missing values in the respective data df column using appropriate method.
+    for col in features.select_dtypes(include = np.number).columns:
+        match strategy:
+            case 'mean':
+                data[col].fillna(data[col].mean(), inplace = True)
+            case 'median':
+                data[col].fillna(data[col].median(), inplace = True)
+            case 'mode':
+                data[col].fillna(data[col].mode(), inplace = True)
+            case _:
+                print(f"Unknown strategy: {strategy}")
+    
     return data
+
 
 # 2. Remove Duplicates
 def remove_duplicates(data):
@@ -35,27 +44,34 @@ def remove_duplicates(data):
     :param data: pandas DataFrame
     :return: pandas DataFrame
     """
-    data.drop_duplicates(inplace = True)    
+    data.drop_duplicates(inplace=True)
     return data
+
 
 # 3. Normalize Numerical Data
 def normalize_data(data,method='minmax'):
-    """Apply normalization to numerical features.
+    """
+    Apply normalization to numerical features.
     :param data: pandas DataFrame
     :param method: str, normalization method ('minmax' (default) or 'standard')
     """
-    if method == "standard":
-        scaler = StandardScaler()
-    elif method == "minmax":
-        scaler = MinMaxScaler()
+    # Get features column names, and only include numerical columns
+    features_col = data.copy().select_dtypes(include=np.number).columns
 
-    numeric_col =  data.select_dtypes(include=np.number).columns
-    data[numeric_col] = scaler.fit_transform(data[numeric_col])
-
-    # Convert first column back to categorical (0 or 1)
-    data['target'] = (data['target'] > 0.5).astype(int)             
+    # Defining scaling method
+    match method:
+        case 'minmax':
+            scaler = MinMaxScaler() 
+        case 'standard':
+            scaler = StandardScaler()
+        case _:
+            print(f"Unknown method: {method}")
+    
+    # Apply method to data, only on the selected columns
+    data[features_col] = scaler.fit_transform(data[features_col])
 
     return data
+
 
 # 4. Remove Redundant Features   
 def remove_redundant_features(data, threshold=0.9):
@@ -64,9 +80,13 @@ def remove_redundant_features(data, threshold=0.9):
     :param threshold: float, correlation threshold
     :return: pandas DataFrame
     """
+
+    # Subset feature columns with numerical values
+    features = data.select_dtypes(include=np.number).iloc[:,1:]
+
     # On numerical columns, calculate the correlation (Pearson method) using .corr()
     # .abs() get absolute value. 
-    corr_matrix = data.select_dtypes(include=np.number).corr().abs()
+    corr_matrix = features.corr().abs()
 
     # np.ones() Create a new matrix with the same dimension as the original correlation matrix and fill the values with 1s.
     # np.triu() Get upper triangle of the matrix, indicated by 1s and 0s.
@@ -81,6 +101,7 @@ def remove_redundant_features(data, threshold=0.9):
     data = data.drop(columns=to_drop)
 
     return data
+
 # ---------------------------------------------------
 
 def simple_model(input_data, split_data=True, scale_data=False, print_report=False):
